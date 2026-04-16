@@ -23,6 +23,7 @@ Singleton {
     property Component geminiApiStrategy: GeminiApiStrategy {}
     property Component openaiApiStrategy: OpenAiApiStrategy {}
     property Component mistralApiStrategy: MistralApiStrategy {}
+    property Component claudeCodeApiStrategy: ClaudeCodeApiStrategy {}
     readonly property string interfaceRole: "interface"
     readonly property string apiKeyEnvVarName: "API_KEY"
 
@@ -182,6 +183,11 @@ Singleton {
             "search": [],
             "none": [],
         },
+        "claude-code": {
+            "functions": [],
+            "search": [],
+            "none": []
+        },
         "mistral": {
             "functions": [
                 {
@@ -255,6 +261,16 @@ Singleton {
     // - api_format: The API format of the model. Can be "openai" or "gemini". Default is "openai".
     // - extraParams: Extra parameters to be passed to the model. This is a JSON object.
     property var models: Config.options.policies.ai === 2 ? {} : {
+        "claude-code": aiModelComponent.createObject(this, {
+            "name": "Claude Code",
+            "icon": "spark-symbolic",
+            "description": Translation.tr("Local | Uses your claude CLI session | Run 'claude' first to log in"),
+            "homepage": "https://claude.ai/code",
+            "endpoint": "",
+            "model": "claude-code",
+            "requires_key": false,
+            "api_format": "claude-code",
+        }),
         "gemini-2.5-flash": aiModelComponent.createObject(this, {
             "name": "Gemini 2.5 Flash",
             "icon": "google-gemini-symbolic",
@@ -302,6 +318,7 @@ Singleton {
         "openai": openaiApiStrategy.createObject(this),
         "gemini": geminiApiStrategy.createObject(this),
         "mistral": mistralApiStrategy.createObject(this),
+        "claude-code": claudeCodeApiStrategy.createObject(this),
     }
     property ApiStrategy currentApiStrategy: apiStrategies[models[currentModelId]?.api_format || "openai"]
 
@@ -778,6 +795,21 @@ Singleton {
         commandExecutionProc.baseMessageContent = responseMessage.content;
         commandExecutionProc.shellCommand = message.functionCall.args.command;
         commandExecutionProc.running = true; // Start the command execution
+    }
+
+    Process {
+        id: clearClaudeCodeSessionProc
+        command: ["rm", "-rf", "/tmp/quickshell/ai/claude-code"]
+    }
+
+    function newSession() {
+        clearMessages();
+        if (models[currentModelId]?.api_format === "claude-code") {
+            clearClaudeCodeSessionProc.running = true;
+            addMessage(Translation.tr("Started new Claude Code session"), interfaceRole);
+        } else {
+            addMessage(Translation.tr("Started new session"), interfaceRole);
+        }
     }
 
     Process {

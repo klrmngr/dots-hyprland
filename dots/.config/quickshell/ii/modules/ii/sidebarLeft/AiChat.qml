@@ -123,7 +123,7 @@ Item {
             name: "clear",
             description: Translation.tr("Clear chat history"),
             execute: () => {
-                Ai.clearMessages();
+                Ai.newSession();
             }
         },
         {
